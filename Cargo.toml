@@ -1,0 +1,17 @@
+[package]
+name = "ratios"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.23", features = ["derive"] }
+ratatui = "0.29.0"
+tokio = { version = "1.41.1", features = [
+  "rt",
+  "macros",
+  "time",
+  "rt-multi-thread",
+] }
+futures = "0.3.30"
+crossterm = { version = "0.28.1", features = ["event-stream"] }
+tui-textarea = "0.6.1"
