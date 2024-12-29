@@ -9,29 +9,86 @@ use ratatui::{
 use tokio::time::Duration;
 use tui_textarea::{Input, TextArea};
 
+use crate::input::Input as Values;
+
+#[derive(Debug)]
+pub struct Item<'a> {
+    ratio: f64,
+    title: Option<String>,
+    textarea: TextArea<'a>,
+}
+
+impl<'a> Item<'a> {
+    pub fn is_valid(&self) -> bool {
+        self.textarea.lines()[0].parse::<f64>().is_ok()
+    }
+    fn get_value(&self) -> f64 {
+        self.textarea.lines()[0].parse::<f64>().unwrap()
+    }
+    fn set_new_value(&mut self, base_value: f64) {
+        self.textarea = TextArea::new(vec![(base_value * self.ratio).to_string()])
+    }
+    fn get_base_value(&mut self) -> f64 {
+        self.get_value() / self.ratio
+    }
+
+    fn style_focussed(&mut self) {
+        let style = Style::default().underlined();
+        self.textarea.set_cursor_style(style);
+        self.textarea.set_cursor_line_style(Style::default());
+        self.textarea.set_block(
+            Block::default()
+                .border_style(Color::LightGreen)
+                .borders(Borders::ALL)
+                .title(self.title.clone().unwrap_or_default()),
+        );
+    }
+
+    fn style_invalid(&mut self) {
+        let style = Style::default().underlined();
+        self.textarea.set_cursor_style(style);
+        self.textarea.set_cursor_line_style(Style::default());
+        self.textarea.set_block(
+            Block::default()
+                .border_style(Color::Red)
+                .borders(Borders::ALL)
+                .title("Not a valid number"),
+        );
+    }
+
+    fn style_unfocussed(&mut self) {
+        self.textarea.set_cursor_style(Style::default());
+        self.textarea.set_cursor_line_style(Style::default());
+        self.textarea.set_block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(self.title.clone().unwrap_or_default()),
+        );
+    }
+}
+
 #[derive(Debug)]
 pub struct App<'a> {
-    ratios: Vec<f64>,
-    inputs: Vec<TextArea<'a>>,
+    items: Vec<Item<'a>>,
     should_quit: bool,
-
     current: usize,
 }
 
 impl<'a> App<'a> {
     const FRAMES_PER_SECOND: f32 = 60.0;
 
-    pub fn new(values: Vec<f64>) -> Self {
-        let inputs = values
+    pub fn new(values: Vec<Values>) -> Self {
+        let first = values[0].value;
+        let items = values
             .iter()
-            .map(|x| TextArea::new(vec![x.to_string()]))
+            .map(|x| Item {
+                title: x.name.clone(),
+                ratio: x.value / first,
+                textarea: TextArea::new(vec![x.value.to_string()]),
+            })
             .collect();
-
-        let first = values[0];
-        let ratios = values.iter().map(|x| x / first).collect();
         Self {
-            ratios,
-            inputs,
+            items,
             should_quit: false,
             current: 0,
         }
@@ -54,45 +111,38 @@ impl<'a> App<'a> {
     }
 
     fn current_valid(&self) -> bool {
-        self.inputs[self.current].lines()[0].parse::<f64>().is_ok()
-    }
-
-    fn get_value(&self, index: usize) -> f64 {
-        self.inputs[index].lines()[0].parse::<f64>().unwrap()
-    }
-    fn set_value(&mut self, index: usize, value: f64) {
-        self.inputs[index] = TextArea::new(vec![value.to_string()])
+        self.items[self.current].is_valid()
     }
 
     fn update(&mut self) {
         let current_valid = self.current_valid();
 
         if current_valid {
-            let base_value = self.get_value(self.current) / self.ratios[self.current];
-            for index in 0..self.ratios.len() {
+            let base_value = self.items[self.current].get_base_value();
+            for index in 0..self.items.len() {
                 if index != self.current {
-                    self.set_value(index, self.ratios[index] * base_value)
+                    self.items[index].set_new_value(base_value);
                 }
             }
         }
 
-        for (index, textarea) in self.inputs.iter_mut().enumerate() {
+        for (index, item) in self.items.iter_mut().enumerate() {
             match index == self.current {
-                true if current_valid => style_focussed(textarea),
-                true => style_invalid(textarea),
-                false => style_unfocussed(textarea),
+                true if current_valid => item.style_focussed(),
+                true => item.style_invalid(),
+                false => item.style_unfocussed(),
             }
         }
     }
 
     fn increment_focus(&mut self) {
         if self.current_valid() {
-            self.current = (self.current + 1) % self.inputs.len()
+            self.current = (self.current + 1) % self.items.len()
         }
     }
 
     fn build_layout(&self, body: Rect) -> Vec<Rect> {
-        Layout::horizontal(vec![Constraint::Fill(1); self.inputs.len()])
+        Layout::horizontal(vec![Constraint::Fill(1); self.items.len()])
             .split(body)
             .to_vec()
     }
@@ -100,7 +150,7 @@ impl<'a> App<'a> {
     fn draw(&self, frame: &mut Frame) {
         let divs = self.build_layout(frame.area());
         for (index, div) in divs.into_iter().enumerate() {
-            frame.render_widget(&self.inputs[index], div);
+            frame.render_widget(&self.items[index].textarea, div);
         }
     }
 
@@ -117,36 +167,10 @@ impl<'a> App<'a> {
                 ..
             }) => self.increment_focus(),
             _ => {
-                self.inputs[self.current].input(Input::from(event.clone()));
+                self.items[self.current]
+                    .textarea
+                    .input(Input::from(event.clone()));
             }
         }
     }
-}
-fn style_focussed(textarea: &mut TextArea) {
-    let style = Style::default().underlined();
-    textarea.set_cursor_style(style);
-    textarea.set_cursor_line_style(Style::default());
-    textarea.set_block(
-        Block::default()
-            .border_style(Color::LightGreen)
-            .borders(Borders::ALL),
-    );
-}
-
-fn style_invalid(textarea: &mut TextArea) {
-    let style = Style::default().underlined();
-    textarea.set_cursor_style(style);
-    textarea.set_cursor_line_style(Style::default());
-    textarea.set_block(
-        Block::default()
-            .border_style(Color::Red)
-            .borders(Borders::ALL)
-            .title("Not a valid number"),
-    );
-}
-
-fn style_unfocussed(textarea: &mut TextArea) {
-    textarea.set_cursor_style(Style::default());
-    textarea.set_cursor_line_style(Style::default());
-    textarea.set_block(Block::default().borders(Borders::ALL));
 }

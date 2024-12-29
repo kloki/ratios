@@ -1,14 +1,15 @@
 use app::App;
 use clap::Parser;
+use input::Input;
 mod app;
+mod input;
+use ratatui::{TerminalOptions, Viewport};
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// list of floats
-    inputs: Vec<f64>,
+    /// list of inputs
+    inputs: Vec<Input>,
 }
-
-use ratatui::{TerminalOptions, Viewport};
 
 #[tokio::main]
 async fn main() {
