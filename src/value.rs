@@ -1,10 +1,10 @@
 use std::{num::ParseFloatError, str::FromStr};
 #[derive(Debug, Clone)]
-pub struct Input {
+pub struct Value {
     pub name: Option<String>,
     pub value: f64,
 }
-impl FromStr for Input {
+impl FromStr for Value {
     type Err = ParseFloatError;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let split: Vec<_> = input.split(':').collect();
@@ -16,6 +16,6 @@ impl FromStr for Input {
             }
         };
         let value = split[0].parse::<f64>()?;
-        Ok(Input { name, value })
+        Ok(Value { name, value })
     }
 }

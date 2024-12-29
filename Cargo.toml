@@ -1,6 +1,6 @@
 [package]
 name = "ratios"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Cli tool to quickly adjust the ratio of a recipe."
 license = "MIT OR Apache-2.0"

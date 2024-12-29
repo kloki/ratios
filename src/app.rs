@@ -9,7 +9,7 @@ use ratatui::{
 use tokio::time::Duration;
 use tui_textarea::{Input, TextArea};
 
-use crate::input::Input as Values;
+use crate::value::Value;
 
 #[derive(Debug)]
 pub struct Item<'a> {
@@ -77,7 +77,7 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     const FRAMES_PER_SECOND: f32 = 60.0;
 
-    pub fn new(values: Vec<Values>) -> Self {
+    pub fn new(values: Vec<Value>) -> Self {
         let first = values[0].value;
         let items = values
             .iter()

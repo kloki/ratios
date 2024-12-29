@@ -1,24 +1,32 @@
 use app::App;
 use clap::Parser;
-use input::Input;
+use value::Value;
 mod app;
-mod input;
+mod value;
 use ratatui::{TerminalOptions, Viewport};
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// list of inputs
-    inputs: Vec<Input>,
+    /// examples 0.1 100 0.2:percentage "210:sugar(grams)"
+    inputs: Vec<Value>,
+}
+
+fn banner() {
+    println!(
+        "
+ ┏┓┏┓╋┓┏┓┏
+ ┛ ┗┻┗┗┗┛┛   <q> to leave, <tab> to cycle inputs"
+    );
 }
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    println!(
-        "
-    ┏┓┏┓╋┓┏┓┏
-    ┛ ┗┻┗┗┗┛┛"
-    );
+    if cli.inputs.is_empty() {
+        return;
+    }
+    banner();
     let terminal = ratatui::try_init_with_options(TerminalOptions {
         viewport: Viewport::Inline(3),
     })
