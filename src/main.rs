@@ -13,8 +13,13 @@ use ratatui::{TerminalOptions, Viewport};
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    println!(
+        "
+    ┏┓┏┓╋┓┏┓┏
+    ┛ ┗┻┗┗┗┛┛"
+    );
     let terminal = ratatui::try_init_with_options(TerminalOptions {
-        viewport: Viewport::Inline(4),
+        viewport: Viewport::Inline(3),
     })
     .unwrap();
     let result = App::new(cli.inputs).run(terminal).await;
@@ -22,4 +27,5 @@ async fn main() {
     if result.is_err() {
         println!("\nSomething went wrong!")
     }
+    println!();
 }
